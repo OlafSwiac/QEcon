@@ -46,7 +46,12 @@ def function(f, x0, lambd, maxiter, delta, N_delta,):
         loop += 1
 
     # liczenie wyniku
-    solution = x_n # or NaN
-    f_solution = f(solution) # or NaN
+    if loop>=maxiter:
+        solution = 'NaN'
+        f_solution = 'NaN'
+    else:
+        solution = x_max
+        f_solution = f(solution)
+
 
     return ( loop//maxiter, solution, f_solution, accepted_points, accepted_values,  sum_alfa/loop )
