@@ -2,7 +2,7 @@ import numpy as np
 
 np.random.seed(seed=1)
 
-def function(f, x0, lambd, maxiter, delta, N_delta,):
+def get_max_point_from_funtion(f, x0, lambd, maxiter, delta, N_delta):
 
     accepted_points = [x0]
     accepted_values = [f(x0)]
@@ -12,7 +12,7 @@ def function(f, x0, lambd, maxiter, delta, N_delta,):
     loop = 0
     sum_alfa = 0
 
-    while count < N_delta & loop < maxiter:
+    while (count < N_delta) & (loop < maxiter):
 
         # losowanie epsilona z rozkladu N(0,1)
         epsilon = np.random.normal(loc=0, scale=1)
