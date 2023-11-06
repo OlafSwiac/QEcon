@@ -1,9 +1,7 @@
 import numpy as np
 
-np.random.seed(seed=1)
 
 def get_max_point_from_funtion(f, x0, lambd, maxiter, delta, N_delta):
-
     accepted_points = [x0]
     accepted_values = [f(x0)]
     x_n = x0
@@ -25,18 +23,18 @@ def get_max_point_from_funtion(f, x0, lambd, maxiter, delta, N_delta):
         sum_alfa += alfa
 
         # liczymy x_n+1
-        if np.random.rand() >= alfa:
+        if np.random.rand() <= alfa:
             x_n = x_star
+
+        # patrzenie czy lapiemy sie do deltowego otoczenia
+        if abs(x_max - x_n) < delta:
+            count += 1
+        else:
+            count = 0
 
         # zapisywanie max wartosci
         if f(x_n) > f(x_max):
             x_max = x_n
-
-        # patrzenie czy lapiemy sie do deltowego otoczenia
-        if abs(x_max-x_n)<delta:
-            count+=1
-        else:
-            count=0
 
         # dopisujemy x_n i f(x_n) do odpowiednich list
         accepted_points.append(x_n)
@@ -46,12 +44,12 @@ def get_max_point_from_funtion(f, x0, lambd, maxiter, delta, N_delta):
         loop += 1
 
     # liczenie wyniku
-    if loop>=maxiter:
+    if loop >= maxiter:
         solution = 'NaN'
         f_solution = 'NaN'
     else:
         solution = x_max
         f_solution = f(solution)
 
-
-    return ( loop//maxiter, solution, f_solution, accepted_points, accepted_values,  sum_alfa/loop )
+    return (loop // maxiter, solution, f_solution, accepted_points, accepted_values, sum_alfa / loop), max(
+        accepted_values)

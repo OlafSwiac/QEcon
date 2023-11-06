@@ -21,11 +21,11 @@ def get_functions_root(f, x0: float, alpha: float, eps: float, maxiter: int) -> 
         list_of_x.append(x1)
         list_of_residuals.append(abs(x1 - x0))
         if abs(x1 - x0) < eps * (1 + abs(x0)):
-            return True, x1, f(x1), abs(x1 - g(x1)), list_of_x, list_of_residuals, i
+            return 0, x1, f(x1), abs(x1 - g(x1)), list_of_x, list_of_residuals, i
         else:
             x0 = (1 - alpha) * g(x0) + alpha * x0
 
-    return False, float('nan'), float('nan'), float('nan'), list_of_x, list_of_residuals, maxiter
+    return 1, float('nan'), float('nan'), float('nan'), list_of_x, list_of_residuals, maxiter
 
 
 def print_task_2(result: tuple) -> None:
@@ -34,7 +34,7 @@ def print_task_2(result: tuple) -> None:
     :param result: Tuple with results
     :return: Printed values
     """
-    if result[0]:
+    if result[0] == 0:
         print(
             'The root of funtion f was found.\n\nFound x = {root}, f(x) = {funtion_value}\n'
             'The difference between final two points: {diff}\nNumber of points: {num_points}, List of points: {points}'
