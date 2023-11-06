@@ -18,4 +18,4 @@ def h(x):
     return (10+x**2)/(1+x**2)
 
 
-result_3, max_y = get_max_point_from_funtion(h, x0=5, lambd=0.01, maxiter=10000, delta=0.01, N_delta=100)
+result_3 = get_max_point_from_funtion(h, x0=5, lambd=0.01, maxiter=10000, delta=0.01, N_delta=100)
