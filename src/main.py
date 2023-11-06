@@ -15,7 +15,7 @@ get_distribution_plots(N)
 
 
 def h(x):
-    return -abs(x) + 10
+    return (10+x**2)/(1+x**2)
 
 
 result_3, max_y = get_max_point_from_funtion(h, x0=5, lambd=0.01, maxiter=10000, delta=0.01, N_delta=100)
