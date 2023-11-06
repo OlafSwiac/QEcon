@@ -6,9 +6,15 @@ from zad3 import get_max_point_from_funtion
 def f(x):
     return (x + 1 + x ** 2) ** (1 / 3) - x
 
+def g(x):
+    return x**3 - x - 1
 
-result = get_functions_root(f, x0=1, alpha=0, eps=0.00000001, maxiter=100)
-print_task_2(result)
+
+result1 = get_functions_root(f, x0=1, alpha=0, eps=0.00000001, maxiter=100)
+print_task_2(result1)
+
+result2 = get_functions_root(g, x0=1, alpha=0, eps=0.00000001, maxiter=100)
+print_task_2(result2)
 
 N = [5, 25, 100, 1000]
 get_distribution_plots(N)
