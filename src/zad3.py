@@ -33,7 +33,7 @@ def get_max_point_from_funtion(f, x0, lambd, maxiter, delta, N_delta):
             x_max = x_n
 
         # patrzenie czy lapiemy sie do deltowego otoczenia
-        if (x_max-x_n)<delta:
+        if abs(x_max-x_n)<delta:
             count+=1
         else:
             count=0
