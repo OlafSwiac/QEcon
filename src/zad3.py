@@ -51,5 +51,4 @@ def get_max_point_from_funtion(f, x0, lambd, maxiter, delta, N_delta):
         solution = x_max
         f_solution = f(solution)
 
-    return (loop // maxiter, solution, f_solution, accepted_points, accepted_values, sum_alfa / loop), max(
-        accepted_values)
+    return (loop // maxiter, solution, f_solution, accepted_points, accepted_values, sum_alfa / loop)
