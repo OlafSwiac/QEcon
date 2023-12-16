@@ -8,9 +8,13 @@ alfa = 0.1
 rho = 0.02
 l = 0.1
 H = [1, 1.5, 2, 2.5, 3, 3.5, 4]
+a = 200
+b = 100
+n = 50
+H_begin = 0
 
 
-def create_job_search_model(n=51, w_min=10, w_max=100, a=200, b=100, n_beta=51, beta=0.96, c=0.1):
+def create_job_search_model(n=50, w_min=10, w_max=100, a=200, b=100, n_beta=51, beta=0.96, c=0.1):
     w_vals = np.linspace(w_min, w_max, n)
     fi = []
     for i in range(0, n_beta):
@@ -70,7 +74,57 @@ h, iter, error, h_history = get_h_1(my_model)
 v, sigma = get_v_from_h(my_model, h)"""
 
 
-def T(v, model):
+def vU(w, H_old, model, iter):
+    n = model[0]
+    w_vals = model[1]
+    fi = model[2]
+    beta = model[3]
+    c = model[4]
+
+    if iter < 3:
+        sum_wages_1 = 0
+        for i in range(0, len(w_vals)):
+            sum_wages_1 += (alfa * vU(w_vals[i], min(H_old + 1, len(H) - 1), model, iter + 1) + (1 - alfa) * vU(
+                w_vals[i], H_old,
+                model, iter + 1)) * fi[i]
+
+        sum_wages_2 = 0
+        for i in range(0, len(w_vals)):
+            sum_wages_2 += (l * vU(w_vals[i], min(H_old - 1, 0), model, iter + 1) + (1 - l) * vU(w_vals[i], H_old,
+                                                                                                 model, iter + 1)) * fi[
+                               i]
+
+        x1 = w * H[int(H_old)] + beta * (1 - rho) * (
+                alfa * vE(w, min(H_old + 1, len(H) - 1), model, iter + 1) + (1 - alfa) * vE(w, H_old, model,
+                                                                                               iter + 1)) + beta * rho * sum_wages_1
+        x2 = c + beta * sum_wages_2
+        return max(x1, x2)
+
+    else:
+        return 0
+
+
+def vE(w, H_old, model, iter):
+    n = model[0]
+    w_vals = model[1]
+    fi = model[2]
+    beta = model[3]
+    c = model[4]
+    if iter < 3:
+        sum_wages_1 = 0
+        for i in range(0, len(w_vals)):
+            sum_wages_1 += (alfa * vU(w_vals[i], min(H_old + 1, len(H) - 1), model, iter + 1) + (1 - alfa) * vU(
+                w_vals[i], H_old,
+                model, iter + 1)) * fi[i]
+
+        return w * H[int(H_old)] + beta * (1 - rho) * (
+                alfa * vE(w, min(H_old + 1, len(H) - 1), model, iter + 1) + (1 - alfa) * vE(w, H_old, model,
+                                                                                            iter + 1)) + beta * rho * sum_wages_1
+    else:
+        return 0
+
+
+def T(H_begin, model):
     n = model[0]
     w_vals = model[1]
     fi = model[2]
@@ -79,78 +133,37 @@ def T(v, model):
 
     results = []
 
-    fi_v = 0
-    for i in range(0, len(fi)):
-        fi_v += v[i] * fi[i]
     for w in w_vals:
-        results.append(max(w / (1 - beta), c + beta * fi_v))
+        results.append(vU(w, H_begin, model, 0))
+        print(w)
+
     return results
 
 
-
-def employed(w, beta, H, iter):
-    if iter < 50:
-        empl_better = employed(H+1, iter+1)
-        empl_same = employed(H, iter+1)
-        unempl = unemployed(H, iter+1)
-        return (H * w + empl_better * (1 - rho) * alfa + empl_same * (1 - rho) * (1 - alfa) + unempl * rho) * beta
-    return 0
-
-def unemployed(fi, H, iter):
-    if iter < 1000:
-        empl = employed(H, iter + 1)
-        unempl_worse = employed(H-1, iter + 1)
-        unempl_same = unemployed(H, iter + 1)
-        w = fi[np.random.randint(0, len(fi) - 1)]
-        return (c + ) * beta
-    return 0
-
-def get_policy(v, model):
-    n = model[0]
-    w_vals = model[1]
-    fi = model[2]
-    beta = model[3]
-    c = model[4]
-
-    fi_v = 0
+def get_policy(v):
     results = []
-
-    for i in range(0, len(fi)):
-        fi_v += v[i] * fi[i]
-    for w in w_vals:
-        results.append(w / (1 - beta) >= c + beta * fi_v)
-
+    v_min = min(v)
+    for v_val in v:
+        results.append(v_val > v_min)
     return results
 
 
-def vfi(model, maxiter=1000, tol=10 ** (-8)):
+def vfi(model):
     n = model[0]
     w_vals = model[1]
     fi = model[2]
     beta = model[3]
     c = model[4]
 
-    v_init = np.array(w_vals) / (1 - beta)
-    error = tol + 1.0
-    iter = 1
+    v = T(H_begin, model)
+    sigma = get_policy(v)
 
-    v = v_init
-    v_history = [v_init]
-
-    while (error > tol) & (iter < maxiter):
-        v_new = T(v, model)
-        error = max(abs(np.array(v_new) - v))
-        v_history.append(v_new)
-        v = v_new
-        iter += 1
-
-    sigma = get_policy(v, model)
-
-    return v, sigma, iter, error, v_history
+    return v, sigma
 
 
 model = create_job_search_model()
-v, sigma, iter, error, v_history = vfi(model)
+v, sigma = vfi(model)
 
-plt.plot(v)
+plt.scatter(x=model[1] * H[H_begin], y=v)
+plt.xlabel("wage * H_begin")
 plt.show()
