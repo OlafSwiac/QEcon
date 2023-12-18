@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 
+# Defining class of the model
 class Model:
     def __init__(self,n=50, w_min=10, w_max=100, a=200, b=100, alfa=0.1, beta=0.96,
                             c=0.1, l=0.1, ro=0.02, H_vals = np.linspace(1,4,7)):
@@ -24,18 +25,22 @@ class Model:
         self.fi = betabinom(self.n, self.a, self.b)
         self.v_init = np.zeros(shape=(len(self.w_vals), len(self.H_vals), len(self.employments)))
 
-        states = []
+        # Defining a list of all states (combinations of (w_lvl, H_lvl, employment))
+        self.states = []
         for i_w, w in enumerate(self.w_vals):
             for i_H, H in enumerate(self.H_vals):
                 for employment in self.employments:
-                    states.append({'w': i_w, 'H': i_H, 'employment': employment})
+                    self.states.append({'w': i_w, 'H': i_H, 'employment': employment})
                     self.v_init[i_w, i_H, employment] = w * H / (1 - self.beta)
-        self.states = states
 
-
+# Bellmann operator (m here is abbreviation for 'model')
 def T(v, m):
+    # Defining a result matrix representing new v
     v_res = np.zeros(shape=v.shape)
+    
     max_H = len(m.H_vals) - 1
+
+    # Assigning a result to each field of the matrix (corresponding to some state)
     for state in m.states:
         probs = betabinom.pmf(np.linspace(0, m.n, m.n+1), m.n, m.a, m.b)
         vec1 = m.alfa * v[:, min(state['H'] + 1, max_H), 0] + (1 - m.alfa) * v[:, state['H'], 0]
@@ -50,8 +55,8 @@ def T(v, m):
 
     return v_res
 
-
-def vfi(model, maxiter=10000, tol=1e-3):
+# Value function iteration
+def vfi(model, maxiter=10000, tol=1e-3, verbose = False):
 
     v_init = model.v_init
     error = tol + 1
@@ -66,7 +71,8 @@ def vfi(model, maxiter=10000, tol=1e-3):
         error = np.max(np.abs(v_new - v))
         v_history.append(v_new)
         v = v_new
-        print('Iter {}. Error {}'.format(iters, error))
+        if verbose:
+            print('Iter {}. Error {}'.format(iters, error))
         iters += 1
 
     return v, iters, error, v_history
@@ -78,6 +84,7 @@ model2 = Model(alfa=0.2)
 v1, iters1, error1, v_history1 = vfi(model1)
 v2, iters2, error2, v_history2 = vfi(model2)
 
+# Plot configuration for result presentation
 fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
 for i, H in enumerate(model1.H_vals):
