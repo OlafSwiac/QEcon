@@ -1,21 +1,20 @@
 import numpy as np
 from numpy import ndarray
-from scipy.stats import betabinom
-import matplotlib.pyplot as plt
-import matplotlib
 import quantecon as qe
+import matplotlib.pyplot as plt
 
 
 class Model:
     def __init__(self):
         self.beta = 0.97
-        self.gamma = 0.9
+        self.gamma = 1
         self.r = 0.01
         self.fi = 0.1
+        # Average wage: 60 000 USD / year
         self.w = 1
-        self.tau = 0.1
-        self.num_states = 13
-        self.a_list = np.arange(0, 1, 0.0025)
+        self.tau = 1 / 15
+        self.num_states = 7
+        self.a_list = np.arange(0, 1, 0.001)
         self.a_list = np.exp(self.a_list) - 1 - self.fi
         self.z_list = np.linspace(0, 2, self.num_states)
 
@@ -55,7 +54,6 @@ sigma = 0.1
 ar_values = simulate_ar1(n, phi, sigma)
 
 
-
 def T(v, model):
     # Defining a result matrix representing new v
     v_res = np.zeros(shape=v.shape)
@@ -63,12 +61,15 @@ def T(v, model):
 
     for i, a in enumerate(model.a_list):
         for j, z in enumerate(model.z_list):
-            c_s = z * model.w + (1+model.r)*a - model.a_list
-            v_s = np.power(np.abs(c_s), 1 - model.gamma) * np.sign(c_s)+ model.beta * np.matmul(v, P[j, :])
+            c_s = np.maximum(z * model.w + (1+model.r)*a - model.a_list, 0.000001)
+            if model.gamma < 1:
+                v_s = (np.power(c_s, 1 - model.gamma) - 1) / (
+                        1 - model.gamma) + model.beta * np.matmul(v, P[j, :])
+            else:
+                v_s = np.log(c_s) + model.beta * np.matmul(v, P[j, :])
             a_prim_ind = np.argmax(v_s)
-            v_val = v_s[a_prim_ind]
 
-            v_res[i, j] = v_val
+            v_res[i, j] = v_s[a_prim_ind]
             c_res[i, j] = c_s[a_prim_ind]
     return v_res, c_res
 
@@ -78,7 +79,6 @@ def vfi(model, maxiter=10000, tol=1e-3, verbose=False):
     v_init = np.zeros(shape=(len(model.a_list), model.num_states))
     error = tol + 1
     iters = 1
-
     v = v_init
     v_history = [v_init]
 
@@ -94,33 +94,6 @@ def vfi(model, maxiter=10000, tol=1e-3, verbose=False):
 
     return v, iters, error, v_history, c
 
-
-def MPC(a, z, c_value_grid, model):
-    delta_a = model.a_list[a] + model.tau / (1 + model.r)
-    index_delta_a = (np.abs(c_value_grid[:, z] - delta_a)).argmin()
-    if model.a_list[index_delta_a] > delta_a:
-        index_delta_a_1 = index_delta_a
-        index_delta_a_2 = min(index_delta_a + 1, len(model.a_list)-1)
-    else:
-        index_delta_a_1 = max(index_delta_a - 1, 0)
-        index_delta_a_2 = index_delta_a
-
-    a_1 = model.a_list[index_delta_a_1]
-    a_2 = model.a_list[index_delta_a_2]
-
-    c_1 = c_value_grid[index_delta_a_1][z]
-    c_2 = c_value_grid[index_delta_a_2][z]
-
-    if a_2 != a_1:
-        delta_c = (c_2 - c_1) / (a_2 - a_1) * delta_a + c_2 - a_2 * (c_2 - c_1) / (a_2 - a_1)
-    else:
-        delta_c = c_value_grid[a][z]
-    mpc = (delta_c - c_value_grid[a][z]) / (model.tau / (1 + model.r))
-
-    return mpc
-
-
-
 model = Model()
 P = discretize_ar1(ar_values, model.num_states)
 
@@ -134,12 +107,18 @@ for j in range(mpc.shape[1]):
         mpc[:, j] = (np.interp(model.a_list + model.tau/(1+model.r), model.a_list, c[:, j]) - c[:, j]) \
                     * (1+model.r) / model.tau
 
-avg_mpc = np.matmul(mpc, stationary)
-plt.plot(model.a_list, avg_mpc)
+avg_mpc = np.mean(np.matmul(mpc, stationary))
+a_len = len(model.a_list)
+plt.scatter(model.a_list, np.matmul(mpc, stationary), alpha=0.1)
+plt.vlines([model.a_list[int(a_len * 0.1)], model.a_list[int(a_len * 0.5)], model.a_list[int(a_len * 0.9)]], 0, 1)
 plt.show()
-print(avg_mpc)
-print('10th percentile: {}'.format(avg_mpc[int(0.1 * len(model.a_list))+1]))
-print('50th percentile: {}'.format(avg_mpc[int(0.5 * len(model.a_list))+1]))
-print('90th percentile: {}'.format(avg_mpc[int(0.9 * len(model.a_list))+1]))
 
-print('Ratio: {}'.format(np.sum(model.a_list) / len(model.a_list) / np.dot(stationary, model.z_list)))
+ax = plt.figure().add_subplot(projection='3d')
+
+
+print('\nAverage MPC (assuming asset level and productivity level are independent): {}\n'.format(avg_mpc))
+print('10th percentile: {}'.format(np.dot(stationary, mpc[int(a_len * 0.1), :])))
+print('50th percentile: {}'.format(np.dot(stationary, mpc[int(a_len * 0.5), :])))
+print('90th percentile: {}'.format(np.dot(stationary, mpc[int(a_len * 0.9), :])))
+
+print('\nRatio: {}'.format(np.sum(model.a_list) / a_len / np.dot(stationary, model.z_list)))
